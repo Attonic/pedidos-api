@@ -4,33 +4,61 @@ import io.github.pedidosapi.enums.StatusPedido;
 import io.github.pedidosapi.exception.TransicaoInvalidaException;
 import io.github.pedidosapi.statemachine.PedidoState;
 import io.github.pedidosapi.statemachine.PedidoStateFactory;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
+@Entity
+@Table(name = "pedidos")
 public class Pedido {
 
-    private PedidoState state;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatusPedido status;
+
 
     public Pedido() {
         this(StatusPedido.CRIADO);
     }
-    public Pedido(StatusPedido statosInicial){
-        this.state = PedidoStateFactory.de(statosInicial);
+
+    public Pedido(StatusPedido statusInicial) {
+        this.status = statusInicial;
     }
 
-   public StatusPedido getStatusPedido() {
-        return state.status();
-   }
+    public Long getId(){
+        return id;
+    }
+
+    public StatusPedido getStatusPedido(){
+        return status;
+    }
+
 
    public void transicionarPara(StatusPedido novo) {
-        this.state = switch (novo) {
-            case AGUARDANDO_PAGAMENTO -> state.aguardarPagamento();
-            case PAGO -> state.pagar();
-            case PAGAMENTO_FALHOU -> state.falharPagamento();
-            case ENVIADO -> state.enviar();
-            case CANCELADO -> state.cancelar();
+
+        PedidoState atual = PedidoStateFactory.de(this.status);
+
+        PedidoState proximo = switch (novo) {
+            case AGUARDANDO_PAGAMENTO -> atual.aguardarPagamento();
+            case PAGO -> atual.pagar();
+            case PAGAMENTO_FALHOU -> atual.falharPagamento();
+            case ENVIADO -> atual.enviar();
+            case CANCELADO -> atual.cancelar();
             case CRIADO -> throw new TransicaoInvalidaException(
-                    "Transição inválida: " + state.status() + " -> " + novo
+                    "Transição inválida: " + atual.status() + " -> " + novo
             );
         };
+
+        this.status = proximo.status();
    }
 
 
