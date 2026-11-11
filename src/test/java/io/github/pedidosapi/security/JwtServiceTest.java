@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class JwtServiceTeste {
+public class JwtServiceTest {
 
     private static final String SEGREDO = "um-segredo-bem-longo-para-testes-1234567890";
 
@@ -46,11 +46,20 @@ public class JwtServiceTeste {
 
     @Test
     void tokenAssinadoComOutraChaveEInvalida () {
-        JwtService serviceA = new JwtService(SEGREDO, 10_000);
-        JwtService serviceV = new JwtService(SEGREDO + "2", 10_000);
+        JwtService emissor = new JwtService(SEGREDO, 10_000);
+        JwtService validador = new JwtService(SEGREDO + "2", 10_000);
 
-        String token = serviceA.gerarToken("antonio");
-        assertFalse(serviceV.tokenValido(token));
+        String token = emissor.gerarToken("antonio");
+        assertFalse(validador.tokenValido(token));
 
+    }
+
+    @Test
+    void tokenMalFormadoEInvalido () {
+        JwtService service = new JwtService(SEGREDO, 60_000);
+        String token = service.gerarToken("antonio");
+
+        assertFalse(service.tokenValido(token + "errado"));
+        assertFalse(service.tokenValido("isso-nao-e-um-jwt"));
     }
 }
